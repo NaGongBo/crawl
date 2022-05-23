@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from datetime import date
 from selenium.common.exceptions import NoSuchElementException
-browser=webdriver.Chrome('/home/boogahead/.local/bin/chromedriver')
+browser=webdriver.Chrome('/hr')
 browser.implicitly_wait(10)
 
 #url='https://mobileticket.interpark.com/goods/22000970'
