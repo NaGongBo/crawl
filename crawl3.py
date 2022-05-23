@@ -22,7 +22,7 @@ url='https://www.kopis.or.kr/por/db/pblprfr/pblprfr.do?menuId=MNU_00020&searchWo
 
 ###mongodb info###
 from pymongo import MongoClient
-client = MongoClient(host='mongodb://dongi_admin:djWjekehdrl_capstone1@3.34.137.43',port=27017)
+client = MongoClient(host='mongodb://dongi_admin:_capstone1@',port=27017)
 db = client['labeling_pool']
 collection = db['test_collection']
 #################
