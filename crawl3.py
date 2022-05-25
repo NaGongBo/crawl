@@ -12,7 +12,7 @@ warnings.filterwarnings("ignore", category=DeprecationWarning)
 
 from datetime import date
 from selenium.common.exceptions import NoSuchElementException
-browser=webdriver.Chrome('/home/boogahead/.local/bin/chromedriver')
+browser=webdriver.Chrome('')
 browser.implicitly_wait(10)
 
 #url='https://mobileticket.interpark.com/goods/22000970'
@@ -21,7 +21,7 @@ url='https://www.kopis.or.kr/por/db/pblprfr/pblprfr.do?menuId=MNU_00020&searchWo
 
 ###mongodb info###
 from pymongo import MongoClient
-client = MongoClient(host='mongodb://dongi_admin:djWjekehdrl_capstone1@3.34.137.43',port=27017)
+client = MongoClient(host='',port=27017)
 db = client['testing_site']
 collection = db['play']
 actor_collection=db['performers']
