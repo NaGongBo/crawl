@@ -10,11 +10,20 @@ import pandas as pd
 import warnings
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 from selenium.webdriver.support.ui import WebDriverWait
+import collections
+from collections import Counter
 
-
+from musical_for_beginners.model.mfb_classifier import MusicalForBeginners
 from datetime import date
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
+"""
+import sys
+classifier=MusicalForBeginners()
+print(classifier.make_prediction_to_unseen_string('음악이 너무 좋았어요').label[0])
+
+sys.exit()
+"""
 chrome_options=Options()
 chrome_options.add_argument('--headless')
 chrome_options.add_argument('--no-sandbox')
@@ -23,7 +32,7 @@ chrome_options.add_argument('--no-proxy-server')
 chrome_options.add_argument("--proxy-server='direct://'")
 chrome_options.add_argument('--proxy-bypass-list=*')
 chrome_options.add_argument('--disable-gpu')
-browser=webdriver.Chrome('/usr/bin/chromedriver',chrome_options=chrome_options)
+browser=webdriver.Chrome('C:/Users/kihyu/AppData/Local/Programs/Python/chromedriver.exe', chrome_options=chrome_options)
 browser.implicitly_wait(10)
 
 file1=open('info.txt','r')
@@ -32,7 +41,7 @@ url=file1.readline().strip("\n")
 ###mongodb info###
 from pymongo import MongoClient
 client = MongoClient(host=mongo_info,port=27017)
-db = client['testing_site']
+db = client['nlp_testing_site_local_pc']
 collection = db['play']
 actor_collection=db['performers']
 theater_collection=db['theater']
@@ -40,13 +49,20 @@ review_collection=db['review']
 #################
 
 browser.get(url)
-time.sleep(10)
-totcnt=int(browser.find_element_by_xpath('//*[@id="su_con"]/div[3]/p/span').text)
+time.sleep(5)
+totcnt_str=browser.find_element_by_xpath('//*[@id="su_con"]/div[3]/p/span').text
+if("," in totcnt_str):
+    totcnt_str=totcnt_str.replace(",","")
+totcnt=int(totcnt_str)
 browser.implicitly_wait(100000)
-totpage=int(totcnt/30)
+totpage=(int(totcnt/30))
 if(totpage*30<totcnt):
     totpage+=1
 ####################################################################
+
+classifier = MusicalForBeginners()
+
+
 for j in range(totpage):
     cnt=0
     number_of_plays_on_this_page=0
@@ -55,6 +71,7 @@ for j in range(totpage):
         if number_of_plays_on_this_page>=30:
             break # we're done with going through tis page-> go to next page
         browser.refresh()
+        time.sleep(3)
         entire_list=browser.find_element_by_xpath('//*[@id="search_listType01"]/ul')
         play_list=entire_list.find_elements_by_class_name('tag_a')
         if(play_list[cnt].text!=""):
@@ -84,6 +101,7 @@ for j in range(totpage):
                 close_seller_link_button=browser.find_element_by_xpath('//*[@id="lpop04"]/div[1]/button')
                 close_seller_link_button.click()
                 browser.back() # go back to original link
+                time.sleep(3)
             if(do_you_have_interpark):#crawl interpark review comments
                 original_link=browser.window_handles[0]
                 added_link=browser.window_handles[1]
@@ -133,11 +151,12 @@ for j in range(totpage):
                 if(playdb_checker):# if exists
                     playdb_link=browser.find_element_by_class_name('is-playdb').get_attribute("href")#look for playdb button
                     browser.get(playdb_link)
+                    time.sleep(3)
                     genre=browser.find_element_by_xpath('//*[@id="wrap"]/div[3]/div[1]/div[2]/table/tbody/tr[1]/td[2]/a[2]').text
                     playtime=browser.find_element_by_xpath('//*[@id="wrap"]/div[3]/div[1]/div[2]/table/tbody/tr[2]/td[2]').text
                     playdb_checker_flag=1
                     browser.back()
-                    time.sleep(1)
+                    time.sleep(3)
                 #if playdb link does not exist, find what we can from kopis
 
                 ##go back to interpark pc website after going through playdb
@@ -145,10 +164,16 @@ for j in range(totpage):
                 ##########################################################
                 ####goes to mobile link from here
                 browser.get(mobile_base)
-
+                """
                 if(browser.find_element_by_xpath('//*[@id="root"]/div[6]/div/div[3]/button[1]') is None==True):
                     fuckwarning=browser.find_element_by_xpath('//*[@id="root"]/div[6]/div/div[3]/button[1]')
                     fuckwarning.send_keys(' ') #야로나 워닝 날려버리는거 --> 옛날꺼에는 워닝 안떠서 연도 보고 파악해야할듯
+                """
+                time.sleep(2)
+                #############33
+                result_counter=Counter()
+                comment_existence=0
+                ###############
                 if(browser.find_elements_by_xpath('//*[@id="productsTab"]/ul/li[3]/a')):#checks if review tab exist
                     reviewbox=browser.find_element_by_xpath('//*[@id="productsTab"]/ul/li[3]/a')
                     browser.execute_script("arguments[0].click();",reviewbox) #관람후기 클릭
@@ -179,22 +204,34 @@ for j in range(totpage):
                     results=[]
                     for i in range(len(review_title)):
                         results.append(review_title[i].text+' '+review[i].text)
+                        insert_review={"play_id":changed,"review":results}
                         df=pd.DataFrame({'play_id':changed,'review':results})
+
+                        #data_to_analyze=pd.DataFrame({'review':results})
+                        #data_analysis = classifier.make_prediction_to_unseen_df(data_to_analyze)['label'][0]
+                        #result_counter.update(data_analysis)
+
                         df=df.replace('\n',' ',regex=True)
                         csv_name=changed+'.csv'
-                        save_loc='/home/ubuntu/archive/'
+                        save_loc='C:/Users/kihyu/Desktop/root/capstone1/archive/'
                         save_loc+=csv_name
                         df.to_csv(save_loc,index=False,encoding="utf-8-sig")
                     if(total>0):
-                        data = pd.read_csv(save_loc,lineterminator='\n')
+                        comment_existence=1
+                        data = pd.read_csv(save_loc,lineterminator='\n').rename(columns={'review\r':'review'})
+                        data= classifier.make_prediction_to_unseen_df(data)
+                        for i in data.label:
+                            result_counter.update(i)
+
+                        #result_counter.update(data.label)
                         data_dict = data.to_dict("records")
                         review_collection.insert_many(data_dict)
                 browser.back()
                 ###back to interpark pc
-                time.sleep(3)
+                time.sleep(2)
                 browser.back()
                 ### back to kopis play detail page
-                time.sleep(3)
+                time.sleep(2)
                 if(playdb_checker_flag==0):
                     genre=browser.find_element_by_xpath('//*[@id="su_con"]/div[1]/div[1]/span').text
                     playtime=browser.find_element_by_xpath('//*[@id="su_con"]/div[2]/div[2]/ul/li[1]/div/dl/dd').text
@@ -208,7 +245,14 @@ for j in range(totpage):
                 if theater_collection.count_documents(theater_existence_query)==0:
                     theather_insertion={"theater_id":location_id,"theater_name":theater_name,"theater_address":location_address}
                     z=theater_collection.insert_one(theather_insertion)
-                mydict={"title":play_title,"performance_info":changed,"interpark_link":change_to_mobile,"yes24_link":yes24_link,"poster":poster_link,"theater_id":location_id,"playtime":playtime,"age_restriction":age_restriction,"genre":genre,"synopsis":playdb_link,'actor_id_list':actor_id_list,'actor_role_lst':actor_role_list}
+                final_result_counter=result_counter.most_common(n=8)
+                final_result_counter_insertion={}
+                ####creates a dictionary for mongodb insertion
+                if comment_existence==1:
+                    for i in range(0,8):
+                        final_result_counter_insertion[final_result_counter[i][0]]=int(final_result_counter[i][1])
+                ###
+                mydict={"title":play_title,"performance_info":changed,"interpark_link":change_to_mobile,"yes24_link":yes24_link,"poster":poster_link,"theater_id":location_id,"playtime":playtime,"age_restriction":age_restriction,"genre":genre,"synopsis":playdb_link,'actor_id_list':actor_id_list,'actor_role_lst':actor_role_list,'counter':final_result_counter_insertion}
                 x=collection.insert_one(mydict) ###db overall insertion
                 browser.back()
                 time.sleep(2)
@@ -216,5 +260,6 @@ for j in range(totpage):
                 time.sleep(2)
                 ##back to kopis list
         cnt+=1
+    time.sleep(10)
     next_page_button=browser.find_element_by_css_selector('#su_con > div.pageing.prfList > div > a.icv.pbml')
     browser.execute_script('arguments[0].click();',next_page_button)
