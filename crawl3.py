@@ -17,13 +17,7 @@ from musical_for_beginners.model.mfb_classifier import MusicalForBeginners
 from datetime import date
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options
-"""
-import sys
-classifier=MusicalForBeginners()
-print(classifier.make_prediction_to_unseen_string('음악이 너무 좋았어요').label[0])
 
-sys.exit()
-"""
 chrome_options=Options()
 chrome_options.add_argument('--headless')
 chrome_options.add_argument('--no-sandbox')
@@ -164,11 +158,6 @@ for j in range(totpage):
                 ##########################################################
                 ####goes to mobile link from here
                 browser.get(mobile_base)
-                """
-                if(browser.find_element_by_xpath('//*[@id="root"]/div[6]/div/div[3]/button[1]') is None==True):
-                    fuckwarning=browser.find_element_by_xpath('//*[@id="root"]/div[6]/div/div[3]/button[1]')
-                    fuckwarning.send_keys(' ') #야로나 워닝 날려버리는거 --> 옛날꺼에는 워닝 안떠서 연도 보고 파악해야할듯
-                """
                 time.sleep(2)
                 #############33
                 result_counter=Counter()
@@ -206,11 +195,6 @@ for j in range(totpage):
                         results.append(review_title[i].text+' '+review[i].text)
                         insert_review={"play_id":changed,"review":results}
                         df=pd.DataFrame({'play_id':changed,'review':results})
-
-                        #data_to_analyze=pd.DataFrame({'review':results})
-                        #data_analysis = classifier.make_prediction_to_unseen_df(data_to_analyze)['label'][0]
-                        #result_counter.update(data_analysis)
-
                         df=df.replace('\n',' ',regex=True)
                         csv_name=changed+'.csv'
                         save_loc='C:/Users/kihyu/Desktop/root/capstone1/archive/'
@@ -223,7 +207,6 @@ for j in range(totpage):
                         for i in data.label:
                             result_counter.update(i)
 
-                        #result_counter.update(data.label)
                         data_dict = data.to_dict("records")
                         review_collection.insert_many(data_dict)
                 browser.back()
